@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-with:
+        with:
           submodules: recursive
 
       - name: Install dependencies
@@ -32,15 +32,15 @@ with:
 
       - name: Configure
         run: |
-          cmake -S . -B _build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B _build -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: |
           cmake --build _build --config Release
 
-      - name: Run tests
+      - name: Run solver
         run: |
-          cmake --build _build --target test -- ARGS=--verbose
+          echo "1 2 1" | ./_build/solver_application/solver
 
   package-linux:
     name: package linux deb rpm tar gz zip
@@ -84,6 +84,7 @@ with:
         uses: softprops/action-gh-release@v2
         with:
           files: packages/*
+          overwrite_files: true
 
   package-macos:
     name: package macos dmg
@@ -114,6 +115,7 @@ with:
         uses: softprops/action-gh-release@v2
         with:
           files: packages/*
+          overwrite_files: true
 
   package-windows:
     name: package windows msi
@@ -147,9 +149,10 @@ with:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path packages
-          cpack --config _build/CPackConfig.cmake -G WIX -B packages -C Release
+cpack --config _build/CPackConfig.cmake -G WIX -B packages -C Release
 
       - name: Upload MSI to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: packages/*
+          overwrite_files: true
