@@ -91,7 +91,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          find packages -maxdepth 1 -type f -print0 | xargs -0 gh release upload "${GITHUB_REF_NAME}" --clobber
+          for file in packages/*; do
+            if [ -f "$file" ]; then
+              gh release upload "${GITHUB_REF_NAME}" "$file" --clobber
+            fi
+          done
 
   package-macos:
     name: package macOS DMG
@@ -120,7 +124,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          find packages -maxdepth 1 -type f -print0 | xargs -0 gh release upload "${GITHUB_REF_NAME}" --clobber
+          for file in packages/*; do
+            if [ -f "$file" ]; then
+              gh release upload "${GITHUB_REF_NAME}" "$file" --clobber
+            fi
+          done
 
   package-windows:
     name: package Windows MSI
@@ -149,9 +157,9 @@ jobs:
           cmake --build _build --config Release
 
       - name: Create MSI package
-     shell: powershell
+        shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path packages
+        New-Item -ItemType Directory -Force -Path packages
           cpack --config _build/CPackConfig.cmake -G WIX -B packages -C Release
 
       - name: Upload MSI package
@@ -159,4 +167,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          Get-ChildItem packages -File | ForEach-Object { gh release upload "$env:GITHUB_REF_NAME" $_.FullName --clobber }
+          Get-ChildItem packages -File | ForEach-Object {
+            gh release upload "$env:GITHUB_REF_NAME" $_.FullName --clobber
+          }
