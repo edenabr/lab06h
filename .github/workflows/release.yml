@@ -24,21 +24,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++
+        run: sudo apt-get update && sudo apt-get install -y cmake g++
 
       - name: Configure
-        run: |
-          cmake -S . -B _build -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B _build -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: |
-          cmake --build _build --config Release
+        run: cmake --build _build --config Release
 
       - name: Run solver
-        run: |
-          echo "1 2 1" | ./_build/solver_application/solver
+        run: echo "1 2 1" | ./_build/solver_application/solver
 
   create-release:
     name: create GitHub Release
@@ -53,8 +48,7 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "${GITHUB_REF_NAME}" || gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --notes "Release ${GITHUB_REF_NAME}"
+        run: gh release view "$GITHUB_REF_NAME" || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Release $GITHUB_REF_NAME"
 
   package-linux:
     name: package Linux DEB RPM TGZ ZIP
@@ -67,35 +61,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++ rpm zip
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ rpm zip
 
       - name: Configure
-        run: |
-          cmake -S . -B _build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: |
-          cmake --build _build --config Release
+        run: cmake --build _build --config Release
 
-      - name: Create Linux packages
-        run: |
-          mkdir -p packages
-          cpack --config _build/CPackConfig.cmake -G DEB -B packages
-          cpack --config _build/CPackConfig.cmake -G RPM -B packages
-          cpack --config _build/CPackConfig.cmake -G TGZ -B packages
-          cpack --config _build/CPackConfig.cmake -G ZIP -B packages
+      - name: Create DEB package
+        run: mkdir -p packages && cpack --config _build/CPackConfig.cmake -G DEB -B packages
+
+      - name: Create RPM package
+        run: cpack --config _build/CPackConfig.cmake -G RPM -B packages
+
+      - name: Create TGZ package
+        run: cpack --config _build/CPackConfig.cmake -G TGZ -B packages
+
+      - name: Create ZIP package
+        run: cpack --config _build/CPackConfig.cmake -G ZIP -B packages
 
       - name: Upload Linux packages
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          for file in packages/*; do
-            if [ -f "$file" ]; then
-              gh release upload "${GITHUB_REF_NAME}" "$file" --clobber
-            fi
-          done
+        run: find packages -maxdepth 1 -type f -exec gh release upload "$GITHUB_REF_NAME" {} --clobber \;
 
   package-macos:
     name: package macOS DMG
@@ -108,27 +97,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure
-        run: |
-          cmake -S . -B _build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: |
-          cmake --build _build --config Release
+        run: cmake --build _build --config Release
 
       - name: Create DMG package
-        run: |
-          mkdir -p packages
-          cpack --config _build/CPackConfig.cmake -G DragNDrop -B packages
+        run: mkdir -p packages && cpack --config _build/CPackConfig.cmake -G DragNDrop -B packages
 
       - name: Upload DMG package
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          for file in packages/*; do
-            if [ -f "$file" ]; then
-              gh release upload "${GITHUB_REF_NAME}" "$file" --clobber
-            fi
-          done
+        run: find packages -maxdepth 1 -type f -exec gh release upload "$GITHUB_REF_NAME" {} --clobber \;
 
   package-windows:
     name: package Windows MSI
@@ -142,31 +122,23 @@ jobs:
 
       - name: Install WiX
         shell: powershell
-        run: |
-          choco install wixtoolset -y
-          Add-Content $env:GITHUB_PATH "C:\Program Files (x86)\WiX Toolset v3.14\bin"
+        run: choco install wixtoolset -y; Add-Content $env:GITHUB_PATH "C:\Program Files (x86)\WiX Toolset v3.14\bin"
 
       - name: Configure
         shell: powershell
-        run: |
-          cmake -S . -B _build -G "Visual Studio 17 2022" -A x64
+        run: cmake -S . -B _build -G "Visual Studio 17 2022" -A x64
 
       - name: Build
         shell: powershell
-        run: |
-          cmake --build _build --config Release
+        run: cmake --build _build --config Release
 
       - name: Create MSI package
-        shell: powershell
-        run: |
-        New-Item -ItemType Directory -Force -Path packages
-          cpack --config _build/CPackConfig.cmake -G WIX -B packages -C Release
+        shell:
+powershell
+        run: New-Item -ItemType Directory -Force -Path packages; cpack --config _build/CPackConfig.cmake -G WIX -B packages -C Release
 
       - name: Upload MSI package
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          Get-ChildItem packages -File | ForEach-Object {
-            gh release upload "$env:GITHUB_REF_NAME" $_.FullName --clobber
-          }
+        run: Get-ChildItem packages -File | ForEach-Object { gh release upload "$env:GITHUB_REF_NAME" $_.FullName --clobber }
