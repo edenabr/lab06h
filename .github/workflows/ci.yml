@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: build (${{ matrix.os }}, ${{ matrix.cxx }}, ${{ matrix.cc }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            cc: clang
+            cxx: clang++
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies on Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc g++ clang
+
+      - name: Clean old build directory
+        run: |
+          rm -rf _build
+
+      - name: Configure
+        run: |
+          cmake -S . -B _build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+
+      - name: Build
+        run: |
+          cmake --build _build --config Release
+
+      - name: Run hello_world
+        run: |
+          ./_build/hello_world_application/hello_world
+
+      - name: Run equation
+        run: |
+          echo "1 2 1" | ./_build/solver_application/equation
