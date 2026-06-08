@@ -133,8 +133,7 @@ jobs:
         run: cmake --build _build --config Release
 
       - name: Create MSI package
-        shell:
-powershell
+        shell: powershell
         run: New-Item -ItemType Directory -Force -Path packages; cpack --config _build/CPackConfig.cmake -G WIX -B packages -C Release
 
       - name: Upload MSI package
