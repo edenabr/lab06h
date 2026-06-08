@@ -1,4 +1,3 @@
-cat > .github/workflows/release.yml <<'EOF'
 name: Release packages
 
 on:
